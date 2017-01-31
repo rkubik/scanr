@@ -13,7 +13,10 @@ int main(int argc, char **argv){
     struct sockaddr_in sa;
 
     printf("Enter hostname or IP:");
-    fgets(hostname,99,stdin);
+    if(fgets(hostname,99,stdin) == NULL){
+      printf("Improper input given. Exiting...\r\n");
+      exit(1);
+    }
 
     printf("\n");
 
