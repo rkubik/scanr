@@ -18,12 +18,18 @@ int main(int argc, char **argv)
     printf("\n");
 
     printf("Enter start port number: ");
-    scanf("%d", &start);
+    if (scanf("%d", &start) != 1) {
+        printf("Improper input given. Exiting...\n");
+        exit(1);
+    }
 
     printf("\n");
 
     printf("Enter end port number: ");
-    scanf("%d", &end);
+    if (scanf("%d", &end) != 1) {
+        printf("Improper input given. Exiting...\n");
+        exit(1);
+    }
 
     for(i = start;  i <= end; i++) {
         scanr_port_result_t result = {0};
