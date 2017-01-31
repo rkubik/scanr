@@ -10,7 +10,10 @@ int main(int argc, char **argv)
     char hostname[100];
 
     printf("Enter hostname or IP:");
-    gets(hostname);
+    if(fgets(hostname,99,stdin) == NULL){
+      printf("Improper input given. Exiting...\r\n");
+      exit(1);
+    }
 
     printf("\n");
 
