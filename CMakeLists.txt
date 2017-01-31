@@ -17,4 +17,6 @@ configure_file(
     "${PROJECT_BINARY_DIR}/config.h"
 )
 
+add_subdirectory( include )
+add_subdirectory( lib )
 add_subdirectory( bin )
