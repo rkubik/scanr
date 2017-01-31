@@ -13,6 +13,6 @@ set( SOURCES
 
 add_executable( scanr ${SOURCES} )
 
-target_link_libraries( scanr libscanr )
+target_link_libraries( scanr libscanr_static )
 
 install( TARGETS scanr RUNTIME DESTINATION usr/sbin )
