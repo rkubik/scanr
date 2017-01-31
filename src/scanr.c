@@ -13,7 +13,7 @@ int main(int argc, char **argv){
     struct sockaddr_in sa;
 
     printf("Enter hostname or IP:");
-    gets(hostname);
+    fgets(hostname,99,stdin);
 
     printf("\n");
 
@@ -29,7 +29,7 @@ int main(int argc, char **argv){
     sa.sin_family = AF_INET;
 
     if(isdigit(hostname[0])){
-        sa.sin_addr.s_addr = inet_addr(hostname);  
+        sa.sin_addr.s_addr = inet_addr(hostname);
     }
     else if (  (host = gethostbyname(hostname)) != 0){
         strncpy((char*)&sa.sin_addr, (char*) host->h_addr, sizeof sa.sin_addr);
@@ -46,7 +46,7 @@ int main(int argc, char **argv){
         sock = socket(AF_INET, SOCK_STREAM, 0);
 
         if(socket < 0){
-            exit(1);    
+            exit(1);
         }
 
         err = connect(sock, (struct sockaddr*)&sa, sizeof sa);
