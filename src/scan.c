@@ -47,6 +47,10 @@ static int _scan_addrinfo(int sock,
         ret = 0;
         result->state = SCANR_PORT_OPEN;
         goto done;
+    } else if (errno == ECONNREFUSED) {
+        ret = 0;
+        result->state = SCANR_PORT_CLOSED;
+        goto done;
     } else if (errno != EINPROGRESS) {
         goto done;
     }

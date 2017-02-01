@@ -6,35 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct addrinfo *getaddrinfo_clone(struct addrinfo *ai)
-{
-    struct addrinfo *copy = NULL;
-
-    if (!ai) {
-        goto done;
-    }
-
-    copy = calloc(1, sizeof(struct addrinfo));
-    if (!copy) {
-        goto done;
-    }
-
-    copy->ai_flags = 0; /* make sure AI_CLONE is off */
-    copy->ai_family = ai->ai_family;
-    copy->ai_socktype = ai->ai_socktype;
-    copy->ai_protocol = ai->ai_protocol;
-    copy->ai_addrlen = ai->ai_addrlen;
-    copy->ai_addr = malloc(ai->ai_addrlen);
-    if (!copy->ai_addr) {
-        free(copy);
-        copy = NULL;
-        goto done;
-    }
-    memcpy(copy->ai_addr, ai->ai_addr, ai->ai_addrlen);
-done:
-    return copy;
-}
-
 int hostname_to_addrinfo(const char *hostname, struct addrinfo **ai)
 {
     int ret = -1;
@@ -54,11 +25,9 @@ int hostname_to_addrinfo(const char *hostname, struct addrinfo **ai)
         goto done;
     }
 
-    /* We only expect one addrinfo structure to be returned */
-    *ai = getaddrinfo_clone(res);
-    if (!*ai) {
-        goto done;
-    }
+    *ai = res;
+    res = (*ai)->ai_next;
+    (*ai)->ai_next = NULL;
 
     ret = 0;
 done:

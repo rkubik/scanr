@@ -7,36 +7,23 @@
 int main(int argc, char **argv)
 {
     int i, sock, start, end;
-    char hostname[100];
+    char *hostname;
 
-    printf("Enter hostname or IP:");
-    if(fgets(hostname,99,stdin) == NULL){
-      printf("Improper input given. Exiting...\r\n");
-      exit(1);
-    }
-
-    printf("\n");
-
-    printf("Enter start port number: ");
-    if (scanf("%d", &start) != 1) {
-        printf("Improper input given. Exiting...\n");
+    if (argc != 4) {
+        printf("Usage: %s <hostname> <port start> <port end>\n", argv[0]);
         exit(1);
     }
 
-    printf("\n");
-
-    printf("Enter end port number: ");
-    if (scanf("%d", &end) != 1) {
-        printf("Improper input given. Exiting...\n");
-        exit(1);
-    }
+    hostname = argv[1];
+    start = atoi(argv[2]);
+    end = atoi(argv[3]);
 
     for(i = start;  i <= end; i++) {
         scanr_port_result_t result = {0};
 
-        printf("Scanning port %i: ", i);
+        printf("[%s] Scanning port %i: ", hostname, i);
 
-        if (scanr_scan_port(hostname, i, 30, &result) != 0) {
+        if (scanr_scan_port(hostname, i, 2, &result) != 0) {
             printf("ERROR\n");
         } else {
             switch (result.state) {
@@ -45,6 +32,9 @@ int main(int argc, char **argv)
                     break;
                 case SCANR_PORT_OPEN:
                     printf("OPEN\n");
+                    break;
+                case SCANR_PORT_TIMEOUT:
+                    printf("TIMEOUT\n");
                     break;
                 default:
                     printf("UNKNOWN\n");
