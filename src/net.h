@@ -2,16 +2,6 @@
 #define SCANR_NET_H
 
 /**
- * @brief Clone a addrinfo structure.
- *
- * @param[in] ai - Pointer to a addrinfo structure
- *
- * @return pointer to a newly allocated addrinfo structure. Must be free'd with
- *         freeaddrinfo.
- */
-struct addrinfo *getaddrinfo_clone(struct addrinfo *ai);
-
-/**
  * @brief Convert a hostname/IPv4/IPv6 string to sockaddr.
  *
  * @param[in] hostname - Hostname, IPv4, or IPv6 string
