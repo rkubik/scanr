@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
     int i, sock, start, end;
     char hostname[100];
-    
+
     printf("Enter hostname or IP:");
     if(fgets(hostname,99,stdin) == NULL){
       printf("Improper input given. Exiting...\r\n");
