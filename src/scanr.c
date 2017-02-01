@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
     int i, sock, start, end;
     char hostname[100];
-
+    
     printf("Enter hostname or IP:");
     if(fgets(hostname,99,stdin) == NULL){
       printf("Improper input given. Exiting...\r\n");
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 
         printf("Scanning port %i: ", i);
 
-        if (scanr_scan_port(hostname, i, &result) != 0) {
+        if (scanr_scan_port(hostname, i, 30, &result) != 0) {
             printf("ERROR\n");
         } else {
             switch (result.state) {

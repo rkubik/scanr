@@ -1,4 +1,5 @@
 #include "scanr/scan.h"
+#include "net.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -7,48 +8,66 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/select.h>
 
+#include <stdio.h>
+#include <errno.h>
 /**
  * @brief Make a connection to a socket with a given sockaddr.
  *
  * @param[in] sock - Network socket
- * @param[in] sa - Sock address
+ * @param[in] ai - Pointer to a addrinfo structure
+ * @param[in] timeout - Connection timeout (seconds)
  * @param[out] result - Port scan results
- */
-static void _scan_sockaddr(int sock,
-                           struct sockaddr_in *sa, 
-                           scanr_port_result_t *result)
-{
-    if (connect(sock, (struct sockaddr*)sa, sizeof(*sa)) != 0) {
-        result->state = SCANR_PORT_CLOSED;
-    } else {
-        result->state = SCANR_PORT_OPEN;
-    }
-}
-
-/**
- * @brief Convert a hostname/ipv4 string to sockaddr.
  *
- * @param[in] hostname - Hostname or ipv4 string
- * @param[out] sa - sockaddr
- *
- * @return 0 on success, -1 on error
+ * @return 0 on success, or -1 on error
  */
-static int _hostname_to_sockaddr(const char *hostname, struct sockaddr_in *sa)
+static int _scan_addrinfo(int sock,
+                          struct addrinfo *ai,
+                          time_t timeout,
+                          scanr_port_result_t *result)
 {
     int ret = -1;
-    struct hostent *host;
+    int err;
+    struct timeval tv;
+    fd_set fdset;
+    int so_error;
+    socklen_t len = sizeof(so_error);
 
-    if (!hostname || !sa) {
+    FD_ZERO(&fdset);
+    FD_SET(sock, &fdset);
+    tv.tv_sec = timeout;
+    tv.tv_usec = 0;
+
+    err = connect(sock, ai->ai_addr, ai->ai_addrlen);
+    if (err == 0) {
+        ret = 0;
+        result->state = SCANR_PORT_OPEN;
+        goto done;
+    } else if (errno != EINPROGRESS) {
         goto done;
     }
 
-    if (isdigit(hostname[0])) {
-        sa->sin_addr.s_addr = inet_addr(hostname);
-    } else if ((host = gethostbyname(hostname)) != 0) {
-        strncpy((char*)&sa->sin_addr, (char*)host->h_addr, sizeof(sa->sin_addr));
-    } else {
+    err = select(sock+1, NULL, &fdset, NULL, &tv);
+    if (err < 0) {
         goto done;
+    }
+
+    if (err == 1) {
+        if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) != 0) {
+            goto done;
+        }
+
+        if (so_error == 0) {
+            result->state = SCANR_PORT_OPEN;
+        } else {
+            result->state = SCANR_PORT_CLOSED;
+        }
+    } else {
+        result->state = SCANR_PORT_TIMEOUT;
     }
 
     ret = 0;
@@ -56,68 +75,89 @@ done:
     return ret;
 }
 
-int scanr_scan_port(const char *hostname, int port, scanr_port_result_t *result)
+int scanr_scan_port(const char *hostname,
+                    int port,
+                    time_t timeout,
+                    scanr_port_result_t *result)
 {
     int ret = -1;
-    int sock;
-    struct sockaddr_in sa = {0};    
+    int sock = -1;
+    struct addrinfo *ai = NULL;
 
     if (!result) {
         goto done;
     }
 
-    sa.sin_port = htons(port);
-    sa.sin_family = AF_INET;
-
-    if (_hostname_to_sockaddr(hostname, &sa) != 0) {
+    if (hostname_to_addrinfo(hostname, &ai) != 0) {
         goto done;
     }
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    addrinfo_set_port(ai, port);
+
+    sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
         goto done;
     }
 
-    _scan_sockaddr(sock, &sa, result);
-    
-    close(sock);
+    if (fcntl(sock, F_SETFL, O_NONBLOCK) != 0) {
+        goto done;
+    }
+
+    if (_scan_addrinfo(sock, ai, timeout, result) != 0) {
+        goto done;        
+    }
+
+    result->port = port;
 
     ret = 0;
 done:
+    if (ai) {
+        freeaddrinfo(ai);
+        ai = NULL;
+    }
+
+    if (sock != -1) {
+        close(sock);
+        sock = -1;
+    }
+
     return ret;
 }
 
 int scanr_scan_port_range(const char *hostname,
                           int port_from, int port_to,
+                          time_t timeout,
                           scanr_port_result_cb callback,
                           void *data)
 {
     int ret = -1;
-    int i;
+    int port;
     int sock;
-    struct sockaddr_in sa = {0};
+    struct addrinfo *ai = NULL;
 
     if (!hostname || !callback || port_from > port_to) {
         goto done;
     }
 
-    if (_hostname_to_sockaddr(hostname, &sa) != 0) {
+    if (hostname_to_addrinfo(hostname, &ai) != 0) {
         goto done;
     } 
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
     if (sock == -1) {
         goto done;
     }
 
-    sa.sin_family = AF_INET;
+    for (port = port_from; port <= port_to; port++) {
+        scanr_port_result_t result = {
+            .port = port
+        };
 
-    for (i = port_from; i <= port_to; i++) {
-        scanr_port_result_t result = {0};
+        addrinfo_set_port(ai, port);
 
-        sa.sin_port = htons(i);
-
-        _scan_sockaddr(sock, &sa, &result);
+        if (_scan_addrinfo(sock, ai, timeout, &result) != 0) {
+            break;
+        }
 
         if (callback(&result, data) != 0) {
             break;
@@ -128,5 +168,10 @@ int scanr_scan_port_range(const char *hostname,
 
     ret = 0;
 done:
+    if (ai) {
+        freeaddrinfo(ai);
+        ai = NULL;
+    }
+
     return ret;
 }

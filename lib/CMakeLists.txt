@@ -1,3 +1,5 @@
+set(CMAKE_C_FLAGS "-ggdb")
+
 include_directories( 
     . 
     ${PROJECT_SOURCE_DIR}/src
@@ -6,6 +8,7 @@ include_directories(
 
 set( LIBSOURCES 
     ${PROJECT_SOURCE_DIR}/src/scan.c
+    ${PROJECT_SOURCE_DIR}/src/net.c
 )
 
 add_library( libscanr_shared SHARED ${LIBSOURCES} )
