@@ -1,6 +1,10 @@
 #ifndef SCANR_NET_H
 #define SCANR_NET_H
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
 /**
  * @brief Convert a hostname/IPv4/IPv6 string to sockaddr.
  *
