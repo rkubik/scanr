@@ -8,7 +8,8 @@ include_directories(
 
 set( LIBSOURCES 
     ${PROJECT_SOURCE_DIR}/src/scan.c
-    ${PROJECT_SOURCE_DIR}/src/net.c
+    ${PROJECT_SOURCE_DIR}/src/util/net.c
+    ${PROJECT_SOURCE_DIR}/src/util/time.c
 )
 
 add_library( libscanr_shared SHARED ${LIBSOURCES} )

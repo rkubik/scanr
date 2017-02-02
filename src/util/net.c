@@ -1,8 +1,5 @@
-#include "net.h"
+#include "util/net.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 

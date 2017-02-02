@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     int port;
     scanr_port_state_t state;
+    struct timespec conn_latency;
     scanr_port_info_t *info;
 } scanr_port_result_t;
 
@@ -61,5 +62,14 @@ int scanr_scan_port_range(const char *hostname,
                           time_t timeout,
                           scanr_port_result_cb callback,
                           void *data);
+
+/**
+ * @brief Convert a port state to string format.
+ *
+ * @param[in] state - Port state
+ *
+ * @return Port state in string format
+ */
+const char *scanr_state_string(const scanr_port_state_t state);
 
 #endif
