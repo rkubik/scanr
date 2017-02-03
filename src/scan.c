@@ -1,6 +1,8 @@
 #include "scanr/scan.h"
 #include "util/net.h"
 #include "util/time.h"
+#include "util/queue.h"
+#include "util/workpool.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,6 +16,14 @@
 #include <sys/time.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <stdlib.h>
+
+typedef struct {
+    int port;
+    time_t timeout;
+    const char *hostname;
+    scanr_port_result_cb result;
+} _scanr_port_request_t;
 
 /**
  * @brief Make a connection to a socket with a given sockaddr.
@@ -91,7 +101,7 @@ done:
 
     return ret;
 }
-#include <stdio.h>
+
 static int _scan_addrinfo(struct addrinfo *ai,
                           time_t timeout,
                           scanr_port_result_t *result)
@@ -119,79 +129,102 @@ done:
     return ret;
 }
 
-int scanr_scan_port(const char *hostname,
-                    int port,
-                    time_t timeout,
-                    scanr_port_result_t *result)
+static void _scan_worker(void *item, void *data)
 {
-    int ret = -1;
+    _scanr_port_request_t *pr = item;
+    scanr_port_result_t res = {0};
     struct addrinfo *ai = NULL;
 
-    if (!result) {
-        goto done;
+    do {
+        if (!pr) {
+            break;
+        }
+
+        res.port = pr->port;
+
+        if (hostname_port_to_addrinfo(pr->hostname,
+                                      pr->port,
+                                      &ai) != 0) {
+            break;
+        }
+
+        if (_scan_addrinfo(ai, pr->timeout, &res) != 0) {
+            break;
+        }
+
+        if (pr->result(&res, data) != 0) {
+            /* @todo signal to stop scanning */
+        }       
+    } while (0);
+
+    if (pr) {
+        free(pr);
+        pr = NULL;
     }
 
-    if (hostname_to_addrinfo(hostname, &ai) != 0) {
-        goto done;
-    }
-
-    addrinfo_set_port(ai, port);
-
-    if (_scan_addrinfo(ai, timeout, result) != 0) {
-        goto done;        
-    }
-
-    result->port = port;
-
-    ret = 0;
-done:
     if (ai) {
         freeaddrinfo(ai);
         ai = NULL;
     }
-
-    return ret;
 }
 
 int scanr_scan_port_range(const char *hostname,
-                          int port_from, int port_to,
+                          int port_start,
+                          int port_end,
                           time_t timeout,
+                          size_t num_workers,
                           scanr_port_result_cb callback,
                           void *data)
 {
     int ret = -1;
+    queue_t *q = NULL;
+    workpool_t *wp;
     int port;
-    struct addrinfo *ai = NULL;
+    _scanr_port_request_t *pr;
 
-    if (!hostname || !callback || port_from > port_to) {
+    if (!hostname || num_workers < 1 || port_start > port_end || !callback) {
         goto done;
     }
 
-    if (hostname_to_addrinfo(hostname, &ai) != 0) {
+    q = queue_create();
+    if (!q) {
         goto done;
-    } 
+    }
 
-    for (port = port_from; port <= port_to; port++) {
-        scanr_port_result_t result = {
-            .port = port
-        };
+    wp = workpool_create(_scan_worker,
+                         NULL,
+                         num_workers,
+                         q,
+                         data);
+    if (!wp) {
+        goto done;
+    }
 
-        addrinfo_set_port(ai, port);
+    /* Add port structures to queue */
+    for (port = port_start; port <= port_end; port++) {
+        pr = calloc(1, sizeof(_scanr_port_request_t));
+        if (pr) {
+            pr->port = port;
+            pr->timeout = timeout;
+            pr->hostname = hostname;
+            pr->result = callback;
 
-        if (_scan_addrinfo(ai, timeout, &result) != 0) {
-            break;
-        }
-
-        if (callback(&result, data) != 0) {
-           break;
+            if (queue_push(q, (void*)pr) != 0) {
+                /* @todo message */
+            }
+        } else {
+            /* @todo message */
         }
     }
+
+    /* Wait until queue is empty */
+    workpool_drain(wp);
 
     ret = 0;
 done:
-    if (ai) {
-        freeaddrinfo(ai);
-        ai = NULL;
+    if (q) {
+        queue_destroy(q);
+        q = NULL;
     }
 
     return ret;

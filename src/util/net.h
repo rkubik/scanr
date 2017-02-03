@@ -9,19 +9,13 @@
  * @brief Convert a hostname/IPv4/IPv6 string to sockaddr.
  *
  * @param[in] hostname - Hostname, IPv4, or IPv6 string
+ * @param[in] port - Port number
  * @param[out] ai - Pointer to a addrinfo structure
  *
  * @return 0 on success, -1 on error
  */
-int hostname_to_addrinfo(const char *hostname, struct addrinfo **ai);
-
-/**
- * @brief Set the port in a addrinfo structure. Only IPv4 and IPv6 families
- *        are currently supported.
- *
- * @param[in,out] ai - Pointer to addrinfo structure
- * @param[in] port - Port to set
- */
-void addrinfo_set_port(struct addrinfo *ai, int port);
+int hostname_port_to_addrinfo(const char *hostname,
+                              int port,
+                              struct addrinfo **ai);
 
 #endif

@@ -3,13 +3,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-int hostname_to_addrinfo(const char *hostname, struct addrinfo **ai)
+#define PORT_SIZE 6
+
+int hostname_port_to_addrinfo(const char *hostname,
+                              int port,
+                              struct addrinfo **ai)
 {
     int ret = -1;
+    int err;
     struct addrinfo hints = {0};
     struct addrinfo *res = NULL;
+    char port_str[PORT_SIZE] = {0};
 
     if (!hostname || !ai) {
+        goto done;
+    }
+
+    err = snprintf(port_str, sizeof(port_str), "%d", port);
+    if (err < 0 || (size_t) err >= sizeof(port_str)) {
         goto done;
     }
 
@@ -18,7 +29,7 @@ int hostname_to_addrinfo(const char *hostname, struct addrinfo **ai)
     hints.ai_flags = AI_PASSIVE; /* Fill IP */
 
     /* getaddrinfo will resolve the hostname, IPv4, or IPv6 strings for us */
-    if (getaddrinfo(hostname, NULL, &hints, &res) != 0) {
+    if (getaddrinfo(hostname, port_str, &hints, &res) != 0) {
         goto done;
     }
 
@@ -34,25 +45,4 @@ done:
     }
 
     return ret;
-}
-
-void addrinfo_set_port(struct addrinfo *ai, int port)
-{
-    struct sockaddr_in *in4;
-    struct sockaddr_in6 *in6;
-
-    if (ai) {
-        switch (ai->ai_family) {
-            case AF_INET:
-                in4 = (struct sockaddr_in*)ai->ai_addr;
-                in4->sin_port = htons(port);
-                break;
-            case AF_INET6:
-                in6 = (struct sockaddr_in6*)ai->ai_addr;
-                in6->sin6_port = htons(port);
-                break;
-            default:
-                break;
-        }
-    }
 }
