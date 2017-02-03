@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 2.8 )
 
-project( scanr )
+project( scanr C)
 
 set( CMAKE_INSTALL_PREFIX "/" )
 
