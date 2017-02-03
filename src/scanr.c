@@ -18,11 +18,11 @@ static int _port_result_handler(const scanr_port_result_t *result, void *data)
 int main(int argc, char **argv)
 {
     int ret = 0;
-    int sock, start, end;
+    int sock, start, end, workers;
     char *hostname;
 
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s <hostname> <port start> <port end>\n",
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s <hostname> <port start> <port end> <workers>\n",
                 argv[0]);
         goto done;
     }
@@ -30,6 +30,7 @@ int main(int argc, char **argv)
     hostname = argv[1];
     start = atoi(argv[2]);
     end = atoi(argv[3]);
+    workers = atoi(argv[4]);
 
     printf("PORT\tSTATE\tLATENCY\n");
 
@@ -37,6 +38,7 @@ int main(int argc, char **argv)
                               start,
                               end,
                               2,
+                              workers,
                               _port_result_handler,
                               NULL) != 0) {
         fprintf(stderr, "An error occurred!\n");

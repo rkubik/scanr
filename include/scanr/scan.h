@@ -31,35 +31,23 @@ typedef struct {
 typedef int(*scanr_port_result_cb)(const scanr_port_result_t *result, void *data);
 
 /**
- * @brief Scan a single port.
- *
- * @param[in] hostname - Hostname/ipv4 to scan
- * @param[in] port - Port to scan
- * @param[in] timeout - Port scanning timeout (seconds)
- * @param[out] result - Port results
- *
- * @return 0 on success, -1 on error
- */
-int scanr_scan_port(const char *hostname,
-                    int port,
-                    time_t timeout,
-                    scanr_port_result_t *result);
-
-/**
  * @brief Scan a port range. Results will be provided in callback.
  *
  * @param[in] hostname - Hostname/ipv4 to scan
  * @param[in] port_from - Starting port
  * @param[in] port_to - Ending port
  * @param[in[ timeout - Port scanning timeout (seconds)
+ * @param[in] num_workers - Number of workers/threads
  * @param[in] callback - Callback to provide port results
  * @param[in] data - User data
  *
  * @return 0 on success, -1 on error
  */
 int scanr_scan_port_range(const char *hostname,
-                          int port_from, int port_to,
+                          int port_start,
+                          int port_end,
                           time_t timeout,
+                          size_t num_workers,
                           scanr_port_result_cb callback,
                           void *data);
 
