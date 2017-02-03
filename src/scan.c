@@ -142,11 +142,11 @@ static void _scan_worker(void *item, void *data)
 
         res.port = pr->port;
 
-        if (hostname_to_addrinfo(pr->hostname, &ai) != 0) {
+        if (hostname_port_to_addrinfo(pr->hostname,
+                                      pr->port,
+                                      &ai) != 0) {
             break;
         }
-
-        addrinfo_set_port(ai, pr->port);
 
         if (_scan_addrinfo(ai, pr->timeout, &res) != 0) {
             break;
