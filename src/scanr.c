@@ -109,17 +109,6 @@ static void handle_input(int argc, char **argv)
           exit(1);
           break;
       }
-    }
-    if (argv[optind] == NULL) {
-    printf("Missing target\n");
-    exit(1);
-  }
-  if(p_flag == 1){
-    scanr_port_result_t result;
-    scanr_scan_port(argv[optind],port_number,&result);
-  }
-      exit(1);
-}
 
 static bool validate_port_number(int number)
 {
