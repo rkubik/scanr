@@ -9,6 +9,7 @@ include_directories(
 
 set( SOURCES
     ${PROJECT_SOURCE_DIR}/src/scanr.c
+    ${PROJECT_SOURCE_DIR}/src/ui.c
 )
 
 add_executable( scanr ${SOURCES} )
