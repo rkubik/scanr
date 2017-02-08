@@ -8,6 +8,8 @@ set( PACKAGE_MAJOR 0 )
 set( PACKAGE_MINOR 1 )
 set( PACKAGE_PATCH 0 )
 
+set(CMAKE_BUILD_TYPE Debug)
+
 message( "MAJOR: ${PACKAGE_MAJOR}" )
 message( "MINOR: ${PACKAGE_MINOR}" )
 message( "PATCH: ${PACKAGE_PATCH}" )
